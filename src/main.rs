@@ -1,16 +1,18 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-fn Square(cx: Scope) -> Element {
+#[derive(PartialEq, Props)]
+struct SquareProps { value: u8 }
+fn Square(cx: Scope<SquareProps>) -> Element {
     cx.render(rsx!(
         button { class: "square",
-            /* TODO */
+            [cx.props.value.to_string()]
         }
     ))
 }
 
 fn Board(cx: Scope) -> Element {
-    let render_square = |i| rsx!(Square {});
+    let render_square = |i| rsx!(Square { value: i });
 
     let status = "Next player: X";
 
