@@ -49,23 +49,29 @@ fn Board<'a>(cx: Scope<'a, BoardProps<'a>>) -> Element {
 
 fn Game(cx: Scope) -> Element {
     let (history, set_history) = use_state(&cx, || vec![History { squares: [None; 9] }]);
+    let (step_number, set_step_number) = use_state(&cx, || 0);
     let (x_is_next, set_x_is_next) = use_state(&cx, || true);
 
     let handle_click = move |i| {
+        let history = &history[0..*step_number+1];
         let current = &history[history.len() - 1];
         let mut squares = current.squares.clone();
         if calculate_winner(&squares).is_some() || squares[i as usize].is_some() {
             return;
         }
         squares[i] = Some(if *x_is_next { "X" } else { "O" });
-        set_history.with_mut(|history| history.push(History { squares }));
+        set_history(history.iter().cloned().chain(std::iter::once(History { squares })).collect());
+        set_step_number(history.len());
         set_x_is_next(!x_is_next);
     };
 
-    let jump_to = |_step| unimplemented!();
+    let jump_to = |step| {
+        set_step_number(step);
+        set_x_is_next(step%2==0);
+    };
 
     
-    let current = &history[history.len() - 1];
+    let current = &history[*step_number];
     let winner = calculate_winner(&current.squares);
 
     let moves = history.iter().enumerate().map(|(mov, _step)| {
@@ -74,8 +80,8 @@ fn Game(cx: Scope) -> Element {
         } else {
             "Go to game start".to_owned()
         };
-        rsx!(li {
-            button { key: "{mov}", onclick: move |_| jump_to(mov), [desc] }
+        rsx!(li { key: "{mov}",
+            button { onclick: move |_| jump_to(mov), [desc] }
         })
     });
 
