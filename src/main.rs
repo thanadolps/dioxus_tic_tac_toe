@@ -75,7 +75,7 @@ fn Game(cx: Scope) -> Element {
             "Go to game start".to_owned()
         };
         rsx!(li {
-            button { onclick: move |_| jump_to(mov), [desc]}
+            button { key: "{mov}", onclick: move |_| jump_to(mov), [desc] }
         })
     });
 
