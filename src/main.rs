@@ -4,9 +4,12 @@ use dioxus::prelude::*;
 #[derive(PartialEq, Props)]
 struct SquareProps { value: u8 }
 fn Square(cx: Scope<SquareProps>) -> Element {
+    let (value, set_value) = use_state(&cx, || None);
+
     cx.render(rsx!(
         button { class: "square",
-            [cx.props.value.to_string()]
+            onclick: move |_| set_value(Some("X")),
+            *value
         }
     ))
 }
