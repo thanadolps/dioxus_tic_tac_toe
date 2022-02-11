@@ -13,35 +13,21 @@ fn Square<'a>(cx: Scope<'a, SquareProps<'a>>) -> Element {
     ))
 }
 
-fn Board(cx: Scope) -> Element {
-    let (squares, set_squares) = use_state(&cx, || [None; 9]);
-    let (x_is_next, set_x_is_next) = use_state(&cx, || true);
-
-    let handle_click = move |i| {
-        let mut squares = squares.clone();
-        if calculate_winner(&squares).is_some() || squares[i as usize].is_some() {
-            return;
-        }
-        squares[i] = Some(if *x_is_next {"X"} else {"O"});
-        set_squares(squares);
-        set_x_is_next(!x_is_next);
-    };
-
-    let render_square = |i| rsx!(
-        Square { value: squares[i], onclick: move |_| handle_click(i) }
-    );
-
-
-    let winner = calculate_winner(squares);
-    let status = if let Some(winner) = winner {
-        format!("Winner: {}", winner)
-    } else {
-        format!("Next player: {}", if *x_is_next {"X"} else {"O"})
+#[derive(Props)]
+struct BoardProps<'a> {
+    squares: [Option<&'static str>; 9],
+    onclick: EventHandler<'a, usize>,
+}
+fn Board<'a>(cx: Scope<'a, BoardProps<'a>>) -> Element {
+    let render_square = |i| {
+        rsx!(Square {
+            value: cx.props.squares[i],
+            onclick: move |_| cx.props.onclick.call(i)
+        })
     };
 
     cx.render(rsx!(
         div {
-            div { class: "status", [status] }
             div { class: "board-row", [
                 render_square(0),
                 render_square(1),
@@ -62,15 +48,38 @@ fn Board(cx: Scope) -> Element {
 }
 
 fn Game(cx: Scope) -> Element {
+    let (history, set_history) = use_state(&cx, || vec![History { squares: [None; 9] }]);
+    let (x_is_next, set_x_is_next) = use_state(&cx, || true);
+
+    let handle_click = move |i| {
+        let current = &history[history.len() - 1];
+        let mut squares = current.squares.clone();
+        if calculate_winner(&squares).is_some() || squares[i as usize].is_some() {
+            return;
+        }
+        squares[i] = Some(if *x_is_next { "X" } else { "O" });
+        set_history.with_mut(|history| history.push(History { squares }));
+        set_x_is_next(!x_is_next);
+    };
+
+    
+    let current = &history[history.len() - 1];
+    let winner = calculate_winner(&current.squares);
+    let status = if let Some(winner) = winner {
+        format!("Winner: {}", winner)
+    } else {
+        format!("Next player: {}", if *x_is_next { "X" } else { "O" })
+    };
+
     cx.render(rsx!(
         style { [include_str!("./main.css")] }
         div { class: "game",
             div { class: "game-board",
-                Board {}
+                Board { squares: current.squares, onclick: handle_click}
             }
         }
         div { class: "game-info",
-            div { /* status */ }
+            div { [status] }
             ol { /* TODO */ }
         }
     ))
@@ -80,6 +89,11 @@ fn Game(cx: Scope) -> Element {
 
 fn main() {
     dioxus::desktop::launch(Game);
+}
+
+#[derive(Clone)]
+struct History {
+    squares: [Option<&'static str>; 9],
 }
 
 fn calculate_winner(squares: &[Option<&'static str>; 9]) -> Option<&'static str> {
