@@ -19,6 +19,9 @@ fn Board(cx: Scope) -> Element {
 
     let handle_click = move |i| {
         let mut squares = squares.clone();
+        if calculate_winner(&squares).is_some() || squares[i as usize].is_some() {
+            return;
+        }
         squares[i] = Some(if *x_is_next {"X"} else {"O"});
         set_squares(squares);
         set_x_is_next(!x_is_next);
@@ -28,7 +31,13 @@ fn Board(cx: Scope) -> Element {
         Square { value: squares[i], onclick: move |_| handle_click(i) }
     );
 
-    let status = format!("Next player: {}", if *x_is_next {"X"} else {"O"});
+
+    let winner = calculate_winner(squares);
+    let status = if let Some(winner) = winner {
+        format!("Winner: {}", winner)
+    } else {
+        format!("Next player: {}", if *x_is_next {"X"} else {"O"})
+    };
 
     cx.render(rsx!(
         div {
@@ -71,4 +80,24 @@ fn Game(cx: Scope) -> Element {
 
 fn main() {
     dioxus::desktop::launch(Game);
+}
+
+fn calculate_winner(squares: &[Option<&'static str>; 9]) -> Option<&'static str> {
+    let lines = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+    ];
+    for i in 0..lines.len() {
+        let [a, b, c] = lines[i];
+        if squares[a].is_some() && squares[a] == squares[b] && squares[a] == squares[c] {
+            return squares[a];
+        }
+    }
+    return None;
 }
