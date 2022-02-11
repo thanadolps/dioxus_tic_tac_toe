@@ -15,18 +15,20 @@ fn Square<'a>(cx: Scope<'a, SquareProps<'a>>) -> Element {
 
 fn Board(cx: Scope) -> Element {
     let (squares, set_squares) = use_state(&cx, || [None; 9]);
+    let (x_is_next, set_x_is_next) = use_state(&cx, || true);
 
-    let handle_click = |i| {
+    let handle_click = move |i| {
         let mut squares = squares.clone();
-        squares[i] = Some("X");
+        squares[i] = Some(if *x_is_next {"X"} else {"O"});
         set_squares(squares);
+        set_x_is_next(!x_is_next);
     };
 
     let render_square = |i| rsx!(
         Square { value: squares[i], onclick: move |_| handle_click(i) }
     );
 
-    let status = "Next player: X";
+    let status = format!("Next player: {}", if *x_is_next {"X"} else {"O"});
 
     cx.render(rsx!(
         div {
