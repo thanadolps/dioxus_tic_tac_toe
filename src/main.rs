@@ -1,21 +1,30 @@
 #![allow(non_snake_case)]
+
 use dioxus::prelude::*;
 
-#[derive(PartialEq, Props)]
-struct SquareProps { value: u8 }
-fn Square(cx: Scope<SquareProps>) -> Element {
-    let (value, set_value) = use_state(&cx, || None);
-
+#[derive(Props)]
+struct SquareProps<'a> { value: Option<&'static str>, onclick: EventHandler<'a, ()> }
+fn Square<'a>(cx: Scope<'a, SquareProps<'a>>) -> Element {
     cx.render(rsx!(
         button { class: "square",
-            onclick: move |_| set_value(Some("X")),
-            *value
+            onclick: move |_| cx.props.onclick.call(()),
+            cx.props.value
         }
     ))
 }
 
 fn Board(cx: Scope) -> Element {
-    let render_square = |i| rsx!(Square { value: i });
+    let (squares, set_squares) = use_state(&cx, || [None; 9]);
+
+    let handle_click = |i| {
+        let mut squares = squares.clone();
+        squares[i] = Some("X");
+        set_squares(squares);
+    };
+
+    let render_square = |i| rsx!(
+        Square { value: squares[i], onclick: move |_| handle_click(i) }
+    );
 
     let status = "Next player: X";
 
