@@ -62,9 +62,23 @@ fn Game(cx: Scope) -> Element {
         set_x_is_next(!x_is_next);
     };
 
+    let jump_to = |_step| unimplemented!();
+
     
     let current = &history[history.len() - 1];
     let winner = calculate_winner(&current.squares);
+
+    let moves = history.iter().enumerate().map(|(mov, _step)| {
+        let desc = if mov != 0 {
+            format!("Go to move #{}", mov)
+        } else {
+            "Go to game start".to_owned()
+        };
+        rsx!(li {
+            button { onclick: move |_| jump_to(mov), [desc]}
+        })
+    });
+
     let status = if let Some(winner) = winner {
         format!("Winner: {}", winner)
     } else {
@@ -80,7 +94,7 @@ fn Game(cx: Scope) -> Element {
         }
         div { class: "game-info",
             div { [status] }
-            ol { /* TODO */ }
+            ol { moves }
         }
     ))
 }
